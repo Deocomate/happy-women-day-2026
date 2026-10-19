@@ -2,7 +2,9 @@ import { createBouquet } from './bouquet.js';
 import { createPetalSky } from './petal-sky.js';
 
 const TYPE_SPEED_MS = 38;
-const MUSIC_URL = '/static/musics/2026.mp3';
+// Opus is ~3x smaller at the same quality; older Safari falls back to a light mono MP3.
+const MUSIC_OPUS_URL = '/static/musics/2026.webm';
+const MUSIC_MP3_URL = '/static/musics/2026.mp3';
 const MUSIC_VOLUME = 0.8;
 const MUSIC_FADE_MS = 2500;
 const gift = window.__GIFT__ || {};
@@ -49,7 +51,8 @@ const bouquet = createBouquet({
 });
 $('bouquet').append(bouquet.svg);
 
-const music = new Audio(MUSIC_URL);
+const music = new Audio();
+music.src = music.canPlayType('audio/webm; codecs="opus"') ? MUSIC_OPUS_URL : MUSIC_MP3_URL;
 music.loop = true;
 music.preload = 'auto';
 
