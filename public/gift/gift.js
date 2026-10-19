@@ -2,6 +2,9 @@ import { createBouquet } from './bouquet.js';
 import { createPetalSky } from './petal-sky.js';
 
 const TYPE_SPEED_MS = 38;
+const MUSIC_URL = '/static/musics/2026.mp3';
+const MUSIC_VOLUME = 0.8;
+const MUSIC_FADE_MS = 2500;
 const gift = window.__GIFT__ || {};
 const hasName = Boolean(gift.name?.trim());
 const name = hasName ? gift.name.trim() : 'bạn';
@@ -46,6 +49,23 @@ const bouquet = createBouquet({
 });
 $('bouquet').append(bouquet.svg);
 
+const music = new Audio(MUSIC_URL);
+music.loop = true;
+music.preload = 'auto';
+
+/** Must run inside a tap handler: browsers only allow audio started by a user gesture. */
+function startMusic() {
+  music.volume = 0;
+  music.play().catch(() => {});
+  const startedAt = performance.now();
+  const fadeIn = (now) => {
+    const progress = Math.min(1, (now - startedAt) / MUSIC_FADE_MS);
+    music.volume = MUSIC_VOLUME * progress;
+    if (progress < 1) requestAnimationFrame(fadeIn);
+  };
+  requestAnimationFrame(fadeIn);
+}
+
 function goTo(from, to) {
   from.classList.add('is-leaving');
   from.classList.remove('is-active');
@@ -79,6 +99,7 @@ envelope.addEventListener('click', async () => {
   if (envelope.classList.contains('is-open')) return;
   envelope.classList.add('is-open');
   intro.classList.add('is-opening');
+  startMusic();
   sky.burst(...centerOf(envelope.querySelector('.env-seal')), 18, 0.6);
   await wait(1500);
   goTo(intro, letter);
