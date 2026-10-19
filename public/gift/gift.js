@@ -52,14 +52,27 @@ const bouquet = createBouquet({
 $('bouquet').append(bouquet.svg);
 
 const music = new Audio();
-music.src = music.canPlayType('audio/webm; codecs="opus"') ? MUSIC_OPUS_URL : MUSIC_MP3_URL;
 music.loop = true;
-music.preload = 'auto';
+const musicUrl = music.canPlayType('audio/webm; codecs="opus"') ? MUSIC_OPUS_URL : MUSIC_MP3_URL;
+// Safari refuses to stream media when a proxy/CDN answers byte-range requests with a full 200,
+// so download the whole (small) file up front and play it from a local blob URL.
+let musicSrc = null;
+const musicReady = fetch(musicUrl)
+  .then((res) => (res.ok ? res.blob() : Promise.reject(new Error(res.statusText))))
+  .then((blob) => URL.createObjectURL(blob))
+  .catch(() => musicUrl)
+  .then((src) => { musicSrc = src; return src; });
+
+function playFrom(src) {
+  music.src = src;
+  music.play().catch(() => {});
+}
 
 /** Must run inside a tap handler: browsers only allow audio started by a user gesture. */
 function startMusic() {
   music.volume = 0;
-  music.play().catch(() => {});
+  if (musicSrc) playFrom(musicSrc);
+  else musicReady.then(playFrom);
   const startedAt = performance.now();
   const fadeIn = (now) => {
     const progress = Math.min(1, (now - startedAt) / MUSIC_FADE_MS);
