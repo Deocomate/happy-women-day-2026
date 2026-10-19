@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#1a0812">
+  <title>{{TITLE}}</title>
+  <meta property="og:title" content="{{TITLE}}">
+  <meta property="og:description" content="Mở thư để nhận bó hoa 20/10 dành riêng cho bạn.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💐</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500&family=Dancing+Script:wght@600;700&family=Playfair+Display:ital,wght@0,500;1,400;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/gift/gift.css">
+  <script>window.__GIFT__ = {{GIFT_JSON}};</script>
+</head>
+<body>
+  <canvas id="sky" class="sky" aria-hidden="true"></canvas>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <!-- Act 1: sealed envelope -->
+  <section id="intro" class="stage intro is-active">
+    <p class="eyebrow">20 · 10</p>
+    <h1 class="intro-title">Có một lá thư<br>dành cho <em class="js-name">bạn</em></h1>
+    <button id="envelope" class="envelope" type="button" aria-label="Mở lá thư">
+      <span class="env-back"></span>
+      <span class="env-paper"></span>
+      <span class="env-pocket"></span>
+      <span class="env-flap"></span>
+      <span class="env-seal" aria-hidden="true">
+        <svg viewBox="0 0 40 40"><path d="M20 31C13 26 8 22 8 16.5 8 13 10.7 10.5 13.8 10.5c2.6 0 4.8 1.6 6.2 3.8 1.4-2.2 3.6-3.8 6.2-3.8 3.1 0 5.8 2.5 5.8 6 0 5.5-5 9.5-12 14.5Z"/></svg>
+      </span>
+    </button>
+    <p class="hint">Chạm vào con dấu để mở thư</p>
+  </section>
+
+  <!-- Act 2: the letter -->
+  <section id="letter" class="stage letter">
+    <article class="letter-card">
+      <div class="avatar-ring">
+        <div class="avatar" id="letter-avatar"></div>
+      </div>
+      <p class="letter-to">Gửi <span class="js-name">bạn</span>,</p>
+      <p id="wish" class="wish"></p>
+      <button id="receive" class="cta" type="button">Nhận bó hoa <span aria-hidden="true">💐</span></button>
+    </article>
+  </section>
+
+  <!-- Act 3: the bouquet -->
+  <section id="garden" class="stage garden">
+    <header class="garden-head">
+      <p class="eyebrow">Chúc mừng ngày Phụ nữ Việt Nam</p>
+      <h2 class="garden-name js-name">bạn</h2>
+    </header>
+    <div id="bouquet" class="bouquet"></div>
+    <footer class="garden-foot">
+      <p id="garden-wish" class="garden-wish"></p>
+      <p class="date-mark">20 · 10</p>
+    </footer>
+  </section>
+
+  <script type="module" src="/static/gift/gift.js"></script>
+</body>
+</html>

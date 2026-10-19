@@ -1,0 +1,19 @@
+{
+  "name": "happy-woman-day-20-10",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Personalized 20/10 flower bouquet gift pages with a hidden admin panel",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch --env-file-if-exists=.env src/server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
+  }
+}

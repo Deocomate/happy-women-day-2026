@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Đăng nhập</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/admin/admin.css">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">✿</span>
+      <h1>Vườn hoa 20/10</h1>
+      <p>Khu vực quản trị</p>
+    </div>
+    {{ERROR}}
+    <form method="post" action="{{BASE}}/login" autocomplete="on">
+      <label>
+        <span>Tài khoản</span>
+        <input name="username" type="text" autocomplete="username" required autofocus>
+      </label>
+      <label>
+        <span>Mật khẩu</span>
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
+    </form>
+  </main>
+</body>
+</html>

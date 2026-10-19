@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    # "expose" keeps the port internal to the Docker network (no host port binding),
+    # so it never clashes with other apps. Coolify's proxy routes the domain to it.
+    expose:
+      - "3000"
+    environment:
+      - PORT=3000
+      - DATA_DIR=/app/data
+      - ADMIN_PATH=${ADMIN_PATH:?Set ADMIN_PATH to a secret URL segment}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:?Set ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
+      - SESSION_SECRET=${SESSION_SECRET:?Set SESSION_SECRET to a long random string}
+    volumes:
+      - gift-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  gift-data:
