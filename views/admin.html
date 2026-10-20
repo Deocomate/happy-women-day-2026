@@ -47,6 +47,21 @@
         </label>
         <p class="slug-preview">Link sẽ là <code id="slug-preview">/…</code></p>
 
+        <details class="wish-fields" id="create-wishes">
+          <summary>Viết lời chúc riêng cho người này</summary>
+          <div class="wish-body">
+          <p class="note">Để trống ô nào thì ô đó dùng lời chúc chung. Gõ <code>{ten}</code> để chèn tên người nhận.</p>
+          <label class="field">
+            <span>Lá thư</span>
+            <textarea id="create-letter-wish" data-wish="letterWish" rows="5" maxlength="600"></textarea>
+          </label>
+          <label class="field">
+            <span>Dòng dưới bó hoa</span>
+            <textarea id="create-garden-wish" data-wish="gardenWish" rows="2" maxlength="200"></textarea>
+          </label>
+          </div>
+        </details>
+
         <p id="form-error" class="error" role="alert" hidden></p>
         <button type="submit" class="btn btn-primary btn-block" id="create-btn">Tạo link tặng hoa 💐</button>
       </form>
@@ -68,6 +83,23 @@
         </div>
         <p id="empty" class="empty" hidden>Danh sách còn trống. Bó hoa đầu tiên đang chờ bạn gói đó.</p>
         <ul id="list" class="list"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="wishes-title">
+        <h2 id="wishes-title">Lời chúc chung</h2>
+        <p class="note">Áp dụng cho mọi người nhận chưa có lời chúc riêng, kể cả link đã gửi. Gõ <code>{ten}</code> để chèn tên người nhận, để trống thì dùng lời mặc định.</p>
+        <form id="wishes-form" class="account-form" novalidate>
+          <label class="field">
+            <span>Lá thư</span>
+            <textarea id="default-letter-wish" data-wish="letterWish" rows="5" maxlength="600"></textarea>
+          </label>
+          <label class="field">
+            <span>Dòng dưới bó hoa</span>
+            <textarea id="default-garden-wish" data-wish="gardenWish" rows="2" maxlength="200"></textarea>
+          </label>
+          <p id="wishes-error" class="error" role="alert" hidden></p>
+          <button type="submit" class="btn btn-primary" id="wishes-btn">Lưu lời chúc chung</button>
+        </form>
       </section>
 
       <section id="accounts" class="panel" aria-labelledby="accounts-title" hidden>
@@ -108,6 +140,26 @@
       <div class="dialog-actions">
         <button type="button" class="btn btn-ghost" id="password-cancel">Thôi</button>
         <button type="submit" class="btn btn-primary" id="password-submit">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="wish-dialog" class="dialog dialog-wide">
+    <form id="wish-form" method="dialog" novalidate>
+      <h2 id="wish-title">Lời chúc riêng</h2>
+      <p class="note">Để trống ô nào thì ô đó dùng lời chúc chung. Gõ <code>{ten}</code> để chèn tên người nhận.</p>
+      <label class="field">
+        <span>Lá thư</span>
+        <textarea id="wish-letter" data-wish="letterWish" rows="6" maxlength="600"></textarea>
+      </label>
+      <label class="field">
+        <span>Dòng dưới bó hoa</span>
+        <textarea id="wish-garden" data-wish="gardenWish" rows="2" maxlength="200"></textarea>
+      </label>
+      <p id="wish-error" class="error" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" id="wish-cancel">Thôi</button>
+        <button type="submit" class="btn btn-primary" id="wish-submit">Lưu</button>
       </div>
     </form>
   </dialog>

@@ -46,23 +46,35 @@ function syncOwner() {
 
 const ownerId = syncOwner();
 
-// Recipients created before accounts existed belong to the owner. Back up once before altering the schema.
-const hasUserColumn = db.prepare("SELECT 1 FROM pragma_table_info('recipients') WHERE name = 'user_id'").get();
-if (!hasUserColumn) {
-  if (db.prepare('SELECT 1 FROM recipients LIMIT 1').get()) {
-    const backup = path.join(config.dataDir, `gifts.before-accounts.${Date.now()}.db`);
+let backedUp = false;
+/** Adds a column once; the first schema change of a start backs up a non-empty database. */
+function ensureColumn(table, column, definition) {
+  if (db.prepare(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`).get(column)) return false;
+  if (!backedUp && db.prepare('SELECT 1 FROM recipients LIMIT 1').get()) {
+    const backup = path.join(config.dataDir, `gifts.before-migration.${Date.now()}.db`);
     db.exec(`VACUUM INTO '${backup.replace(/'/g, "''")}'`);
     console.log(`[db] Backed up database to ${backup}`);
   }
-  db.exec('ALTER TABLE recipients ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE');
+  backedUp = true;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  return true;
+}
+
+// Recipients created before accounts existed belong to the owner.
+if (ensureColumn('recipients', 'user_id', 'INTEGER REFERENCES users(id) ON DELETE CASCADE')) {
   db.prepare('UPDATE recipients SET user_id = ? WHERE user_id IS NULL').run(ownerId);
 }
 db.exec('CREATE INDEX IF NOT EXISTS recipients_user_id ON recipients (user_id)');
+// Custom wishes: NULL falls back to the account's wish, then to the app default.
+for (const table of ['users', 'recipients']) {
+  ensureColumn(table, 'letter_wish', 'TEXT');
+  ensureColumn(table, 'garden_wish', 'TEXT');
+}
 
 // Verified against unknown usernames so a login takes the same time whether the account exists or not.
 const DUMMY_HASH = hashPassword(crypto.randomUUID());
 const USER_COLUMNS = 'id, username, is_owner, token_version, created_at';
-const RECIPIENT_COLUMNS = 'id, slug, name, avatar, created_at';
+const RECIPIENT_COLUMNS = 'id, slug, name, avatar, letter_wish, garden_wish, created_at';
 
 const stmt = {
   listUsers: db.prepare(`SELECT ${USER_COLUMNS},
@@ -74,14 +86,20 @@ const stmt = {
   insertUser: db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)'),
   setPassword: db.prepare('UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?'),
   removeUser: db.prepare('DELETE FROM users WHERE id = ? AND is_owner = 0'),
+  userWishes: db.prepare('SELECT letter_wish, garden_wish FROM users WHERE id = ?'),
+  setUserWishes: db.prepare('UPDATE users SET letter_wish = ?, garden_wish = ? WHERE id = ?'),
 
+  giftBySlug: db.prepare(`SELECT r.name, r.avatar,
+    COALESCE(r.letter_wish, u.letter_wish) AS letter_wish, COALESCE(r.garden_wish, u.garden_wish) AS garden_wish
+    FROM recipients r JOIN users u ON u.id = r.user_id WHERE r.slug = ?`),
+  setRecipientWishes: db.prepare('UPDATE recipients SET letter_wish = ?, garden_wish = ? WHERE id = ? AND user_id = ?'),
   listRecipients: db.prepare(`SELECT ${RECIPIENT_COLUMNS} FROM recipients WHERE user_id = ? ORDER BY id DESC`),
   avatarsOfUser: db.prepare('SELECT avatar FROM recipients WHERE user_id = ? AND avatar IS NOT NULL'),
-  recipientBySlug: db.prepare(`SELECT ${RECIPIENT_COLUMNS} FROM recipients WHERE slug = ?`),
   recipientOfUser: db.prepare(`SELECT ${RECIPIENT_COLUMNS} FROM recipients WHERE id = ? AND user_id = ?`),
   recipientById: db.prepare(`SELECT ${RECIPIENT_COLUMNS} FROM recipients WHERE id = ?`),
   slugExists: db.prepare('SELECT 1 FROM recipients WHERE slug = ?'),
-  insertRecipient: db.prepare('INSERT INTO recipients (user_id, slug, name, avatar) VALUES (?, ?, ?, ?)'),
+  insertRecipient: db.prepare(`INSERT INTO recipients (user_id, slug, name, avatar, letter_wish, garden_wish)
+    VALUES (?, ?, ?, ?, ?, ?)`),
   removeRecipient: db.prepare('DELETE FROM recipients WHERE id = ? AND user_id = ?'),
 };
 
@@ -106,17 +124,24 @@ export const users = {
     const avatars = stmt.avatarsOfUser.all(id).map((r) => r.avatar);
     return stmt.removeUser.run(id).changes > 0 ? avatars : null;
   },
+  wishesOf: (id) => stmt.userWishes.get(id),
+  setWishes: (id, { letterWish, gardenWish }) => stmt.setUserWishes.run(letterWish, gardenWish, id),
 };
 
 // Every query that reads or deletes is scoped by the owning user, so accounts never see each other's data.
 export const recipients = {
   listFor: (userId) => stmt.listRecipients.all(userId),
-  findBySlug: (slug) => stmt.recipientBySlug.get(slug),
+  /** Public gift data with the recipient's own wishes, falling back to the sender account's. */
+  findGiftBySlug: (slug) => stmt.giftBySlug.get(slug),
   findForUser: (id, userId) => stmt.recipientOfUser.get(id, userId),
   slugExists: (slug) => Boolean(stmt.slugExists.get(slug)),
-  create(userId, { slug, name, avatar }) {
-    const { lastInsertRowid } = stmt.insertRecipient.run(userId, slug, name, avatar ?? null);
+  create(userId, { slug, name, avatar, letterWish, gardenWish }) {
+    const { lastInsertRowid } = stmt.insertRecipient.run(userId, slug, name, avatar ?? null, letterWish, gardenWish);
     return stmt.recipientById.get(lastInsertRowid);
+  },
+  setWishesForUser(id, userId, { letterWish, gardenWish }) {
+    stmt.setRecipientWishes.run(letterWish, gardenWish, id, userId);
+    return stmt.recipientOfUser.get(id, userId);
   },
   removeForUser: (id, userId) => stmt.removeRecipient.run(id, userId).changes > 0,
 };

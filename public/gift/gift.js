@@ -1,5 +1,6 @@
 import { createBouquet } from './bouquet.js';
 import { createPetalSky } from './petal-sky.js';
+import { DEFAULT_WISHES, fillName } from '/static/shared/wishes.js';
 
 const TYPE_SPEED_MS = 38;
 // Opus is ~3x smaller at the same quality; older Safari falls back to a light mono MP3.
@@ -12,10 +13,8 @@ const hasName = Boolean(gift.name?.trim());
 const name = hasName ? gift.name.trim() : 'bạn';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const letterWish = `Hôm nay là ngày của ${name}, nên được quyền nhõng nhẽo cả ngày nha. `
-  + `Chúc ${name} luôn vui, luôn xinh và bình yên theo cách của riêng mình. `
-  + 'Chuyện mệt mỏi cứ để mai tính, hôm nay chỉ cần nhận hoa thôi 🌷';
-const gardenWish = `Bó hoa này chỉ có một, và nó là của ${name}.`;
+const letterWish = fillName(gift.letterWish || DEFAULT_WISHES.letterWish, name);
+const gardenWish = fillName(gift.gardenWish || DEFAULT_WISHES.gardenWish, name);
 
 const $ = (id) => document.getElementById(id);
 const intro = $('intro');

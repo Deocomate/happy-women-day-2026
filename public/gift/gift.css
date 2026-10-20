@@ -145,6 +145,7 @@ button:focus-visible { outline: 3px solid rgba(255, 241, 199, .6); outline-offse
 .letter-to { margin: 4px 0 0; font-family: var(--script); font-size: clamp(1.8rem, 7vw, 2.3rem); color: #a3153f; line-height: 1.2; }
 .wish {
   margin: 0; min-height: 7.5em; font-size: clamp(1rem, 4vw, 1.1rem); line-height: 1.7; color: #4a2132;
+  white-space: pre-line; overflow-wrap: anywhere;
 }
 .wish.is-typing::after { content: '|'; margin-left: 1px; color: #c2365f; animation: blink .8s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
@@ -185,6 +186,7 @@ button:focus-visible { outline: 3px solid rgba(255, 241, 199, .6); outline-offse
 .garden-wish {
   margin: 0 auto; max-width: 34ch; font-family: var(--serif); font-style: italic;
   font-size: clamp(1rem, 3.8vw, 1.25rem); line-height: 1.55; color: #fde7ee;
+  white-space: pre-line; overflow-wrap: anywhere;
 }
 .date-mark { margin: 6px 0 0; font-family: var(--serif); letter-spacing: .4em; color: var(--gold); font-size: .85rem; }
 

@@ -16,8 +16,19 @@ hoặc xoá tài khoản cho người khác ngay trong trang quản trị (mục
 - Xoá một tài khoản sẽ xoá luôn các link tặng hoa và ảnh của tài khoản đó.
 - Đường dẫn tặng hoa dùng chung một không gian tên, nên hai tài khoản cùng tặng "Lan" sẽ ra `/lan` và `/lan-2`.
 
-Lần đầu chạy bản có tài khoản trên dữ liệu cũ, app tự sao lưu DB thành `gifts.before-accounts.<thời gian>.db`
-trong `DATA_DIR`, rồi gán toàn bộ người nhận cũ cho chủ app.
+## Lời chúc
+
+Mỗi món quà có hai lời chúc: **lá thư** (tối đa 600 ký tự) và **dòng dưới bó hoa** (tối đa 200 ký tự).
+App chọn lời chúc theo thứ tự sau, ô nào để trống thì xuống cấp tiếp theo:
+
+1. Lời chúc riêng của người nhận, viết lúc tạo link hoặc qua nút **Lời chúc** trong danh sách.
+2. Lời chúc chung của tài khoản, sửa ở mục **Lời chúc chung**. Đổi lời chung thì cả các link đã gửi cũng đổi theo.
+3. Lời mặc định trong `public/shared/wishes.js`.
+
+Gõ `{ten}` ở bất kỳ đâu trong lời chúc để chèn tên người nhận.
+
+Khi bản mới cần thêm cột vào DB, app tự sao lưu DB thành `gifts.before-migration.<thời gian>.db`
+trong `DATA_DIR` trước khi sửa. Lần đầu chạy bản có tài khoản, toàn bộ người nhận cũ được gán cho chủ app.
 
 ## Cấu trúc
 
@@ -30,6 +41,7 @@ trong `DATA_DIR`, rồi gán toàn bộ người nhận cũ cho chủ app.
 | `src/password.js` | Băm mật khẩu bằng scrypt |
 | `src/avatar-upload.js` | Nhận ảnh (≤5MB), kiểm tra magic bytes JPG/PNG/WEBP/GIF |
 | `public/shared/slug.js` | Hàm tạo slug dùng chung cho server và trang quản trị |
+| `public/shared/wishes.js` | Lời chúc mặc định, giới hạn độ dài và cách thay `{ten}` |
 | `public/gift/` | Trang tặng hoa: `bouquet.js` (bó hoa SVG), `petal-sky.js` (cánh hoa rơi), `gift.js`, `gift.css` |
 | `public/admin/`, `views/` | Giao diện quản trị và các template HTML |
 | `legacy/index-2025.html` | Bản tĩnh năm ngoái, chỉ để tham khảo, không được phục vụ |

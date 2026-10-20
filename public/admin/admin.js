@@ -1,4 +1,5 @@
 import { slugify } from '/static/shared/slug.js';
+import { DEFAULT_WISHES } from '/static/shared/wishes.js';
 
 const AVATAR_SIZE = 512;
 const base = document.body.dataset.base;
@@ -91,6 +92,23 @@ function setAvatar(blob) {
   }
 }
 
+// ---- Wishes: per recipient, falling back to the account's shared wish, then the app default ----
+let accountWishes = { letterWish: null, gardenWish: null };
+const fallbackWish = (field) => accountWishes[field] || DEFAULT_WISHES[field];
+const wishInputs = (container) => [...container.querySelectorAll('[data-wish]')];
+const readWishes = (container) => Object.fromEntries(wishInputs(container).map((el) => [el.dataset.wish, el.value]));
+const fillWishes = (container, wishes) => {
+  for (const el of wishInputs(container)) el.value = wishes[el.dataset.wish] ?? '';
+};
+
+/** Shows, in each empty box, the text the gift page will use when that box stays empty. */
+function refreshWishPlaceholders() {
+  for (const el of wishInputs($('wishes-form'))) el.placeholder = DEFAULT_WISHES[el.dataset.wish];
+  for (const container of [$('create-wishes'), $('wish-form')]) {
+    for (const el of wishInputs(container)) el.placeholder = fallbackWish(el.dataset.wish);
+  }
+}
+
 function showError(message) {
   formError.textContent = message;
   formError.hidden = !message;
@@ -117,6 +135,9 @@ function renderItem(r) {
   const link = Object.assign(document.createElement('a'), {
     className: 'item-link', href: giftUrl(r.slug), target: '_blank', rel: 'noopener', textContent: `/${r.slug}`,
   });
+  if (r.letterWish || r.gardenWish) {
+    name.append(Object.assign(document.createElement('span'), { className: 'tag', textContent: 'Lời chúc riêng' }));
+  }
   body.append(name, link);
 
   const actions = document.createElement('div');
@@ -125,11 +146,15 @@ function renderItem(r) {
     type: 'button', className: 'btn btn-ghost btn-small', textContent: 'Copy',
   });
   copyBtn.addEventListener('click', () => copy(giftUrl(r.slug)));
+  const wishBtn = Object.assign(document.createElement('button'), {
+    type: 'button', className: 'btn btn-ghost btn-small', textContent: 'Lời chúc',
+  });
+  wishBtn.addEventListener('click', () => openWishDialog(r, li));
   const deleteBtn = Object.assign(document.createElement('button'), {
     type: 'button', className: 'btn btn-danger btn-small', textContent: 'Xoá',
   });
   deleteBtn.addEventListener('click', () => removeRecipient(r, li));
-  actions.append(copyBtn, deleteBtn);
+  actions.append(copyBtn, wishBtn, deleteBtn);
 
   li.append(avatar, body, actions);
   return li;
@@ -191,6 +216,7 @@ form.addEventListener('submit', async (event) => {
 
   const data = new FormData();
   data.append('name', name);
+  for (const [field, value] of Object.entries(readWishes($('create-wishes')))) data.append(field, value);
   if (avatarBlob) data.append('avatar', avatarBlob, 'avatar.jpg');
 
   try {
@@ -201,6 +227,7 @@ form.addEventListener('submit', async (event) => {
     $('created-link').value = giftUrl(created.slug);
     $('created').hidden = false;
     form.reset();
+    $('create-wishes').open = false;
     setAvatar(null);
     $('slug-preview').textContent = '/…';
   } catch (err) {
@@ -214,6 +241,65 @@ document.addEventListener('click', (event) => {
   const target = event.target.closest('[data-copy-target]');
   if (target) copy($(target.dataset.copyTarget).value);
 });
+
+const wishDialog = $('wish-dialog');
+const wishError = $('wish-error');
+let wishTarget = null;
+
+function openWishDialog(recipient, li) {
+  wishTarget = { recipient, li };
+  $('wish-title').textContent = `Lời chúc cho ${recipient.name}`;
+  fillWishes($('wish-form'), recipient);
+  wishError.hidden = true;
+  wishDialog.showModal();
+  $('wish-letter').focus();
+}
+
+$('wish-cancel').addEventListener('click', () => wishDialog.close());
+
+$('wish-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const submit = $('wish-submit');
+  submit.disabled = true;
+  wishError.hidden = true;
+  try {
+    const { recipient, li } = wishTarget;
+    const updated = await sendJson(`${api}/${recipient.id}/wishes`, 'PUT', readWishes($('wish-form')));
+    li.replaceWith(renderItem(updated));
+    wishDialog.close();
+    toast(`Đã lưu lời chúc cho ${updated.name}`);
+  } catch (err) {
+    wishError.textContent = err.message;
+    wishError.hidden = false;
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+$('wishes-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const submit = $('wishes-btn');
+  const error = $('wishes-error');
+  submit.disabled = true;
+  error.hidden = true;
+  try {
+    accountWishes = await sendJson(`${base}/api/me/wishes`, 'PUT', readWishes(event.target));
+    fillWishes(event.target, accountWishes);
+    refreshWishPlaceholders();
+    toast('Đã lưu lời chúc chung');
+  } catch (err) {
+    error.textContent = err.message;
+    error.hidden = false;
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+async function loadWishes() {
+  accountWishes = await request(`${base}/api/me/wishes`);
+  fillWishes($('wishes-form'), accountWishes);
+  refreshWishPlaceholders();
+}
 
 // ---- Passwords: your own, or an account the owner manages ----
 const passwordDialog = $('password-dialog');
@@ -347,4 +433,6 @@ if (isOwner) {
   loadAccounts().catch((err) => toast(err.message));
 }
 
+refreshWishPlaceholders();
+loadWishes().catch((err) => toast(err.message));
 loadList().catch((err) => toast(err.message));

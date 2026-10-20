@@ -6,6 +6,7 @@ import multer from 'multer';
 import { config } from './config.js';
 import { recipients, users } from './db.js';
 import { uniqueSlug } from '../public/shared/slug.js';
+import { DEFAULT_WISHES, WISH_LIMITS } from '../public/shared/wishes.js';
 import { avatarUpload, saveAvatar, deleteAvatar } from './avatar-upload.js';
 import {
   currentUser, requireAuth, requireOwner, startSession, endSession, isLockedOut, login,
@@ -39,13 +40,31 @@ const render = (name, vars = {}) => templates[name].replace(
   (_, key) => ({ ASSET_VERSION: assetVersion, ...vars })[key] ?? '',
 );
 const avatarUrl = (fileName) => (fileName ? `/uploads/${fileName}` : null);
-const toDto = (r) => ({ ...r, avatar: avatarUrl(r.avatar) });
+const toDto = ({ letter_wish: letterWish, garden_wish: gardenWish, ...r }) => ({
+  ...r, avatar: avatarUrl(r.avatar), letterWish, gardenWish,
+});
+
+/** Normalizes the wish fields of a request body; empty means "use the fallback" and is stored as null. */
+function parseWishes(body) {
+  const wishes = {};
+  for (const [field, limit] of Object.entries(WISH_LIMITS)) {
+    const text = String(body?.[field] ?? '').replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    if (text.length > limit) return { error: `Lời chúc dài quá, tối đa ${limit} ký tự thôi` };
+    wishes[field] = text || null;
+  }
+  return { wishes };
+}
 
 function renderGift(recipient) {
   const name = recipient?.name ?? '';
   return render('gift', {
     TITLE: escapeHtml(name ? `Có hoa gửi ${name} nè 💐` : 'Có hoa gửi bạn nè 💐'),
-    GIFT_JSON: safeJson({ name, avatar: avatarUrl(recipient?.avatar) }),
+    GIFT_JSON: safeJson({
+      name,
+      avatar: avatarUrl(recipient?.avatar),
+      letterWish: recipient?.letter_wish || DEFAULT_WISHES.letterWish,
+      gardenWish: recipient?.garden_wish || DEFAULT_WISHES.gardenWish,
+    }),
   });
 }
 
@@ -103,7 +122,7 @@ admin.post('/logout', (req, res) => {
 });
 
 const api = express.Router();
-api.use(requireAuth, express.json({ limit: '4kb' }));
+api.use(requireAuth, express.json({ limit: '16kb' }));
 
 /** Returns an error message, or null when the password is acceptable. */
 function passwordProblem(password) {
@@ -130,6 +149,18 @@ api.put('/me/password', (req, res) => {
   res.status(204).end();
 });
 
+api.get('/me/wishes', (req, res) => {
+  const { letter_wish: letterWish, garden_wish: gardenWish } = users.wishesOf(req.user.id);
+  res.json({ letterWish, gardenWish });
+});
+
+api.put('/me/wishes', (req, res) => {
+  const { wishes, error } = parseWishes(req.body);
+  if (error) return res.status(400).json({ error });
+  users.setWishes(req.user.id, wishes);
+  res.json(wishes);
+});
+
 api.get('/recipients', (req, res) => {
   res.json(recipients.listFor(req.user.id).map(toDto));
 });
@@ -140,6 +171,8 @@ api.post('/recipients', avatarUpload.single('avatar'), async (req, res) => {
   if (name.length > MAX_NAME_LENGTH) {
     return res.status(400).json({ error: `Tên dài quá, tối đa ${MAX_NAME_LENGTH} ký tự thôi` });
   }
+  const { wishes, error } = parseWishes(req.body);
+  if (error) return res.status(400).json({ error });
 
   let avatar = null;
   try {
@@ -149,7 +182,15 @@ api.post('/recipients', avatarUpload.single('avatar'), async (req, res) => {
   }
 
   const slug = uniqueSlug(name, (s) => RESERVED_SLUGS.has(s) || recipients.slugExists(s));
-  res.status(201).json(toDto(recipients.create(req.user.id, { slug, name, avatar })));
+  res.status(201).json(toDto(recipients.create(req.user.id, { slug, name, avatar, ...wishes })));
+});
+
+api.put('/recipients/:id/wishes', (req, res) => {
+  const { wishes, error } = parseWishes(req.body);
+  if (error) return res.status(400).json({ error });
+  const updated = recipients.setWishesForUser(Number(req.params.id), req.user.id, wishes);
+  if (!updated) return res.status(404).json({ error: 'Không tìm thấy người này' });
+  res.json(toDto(updated));
 });
 
 api.delete('/recipients/:id', async (req, res) => {
@@ -235,7 +276,7 @@ app.use(base, admin);
 app.get('/', (req, res) => res.send(renderGift(null)));
 
 app.get('/:slug', (req, res, next) => {
-  const recipient = recipients.findBySlug(req.params.slug.toLowerCase());
+  const recipient = recipients.findGiftBySlug(req.params.slug.toLowerCase());
   if (!recipient) return next();
   res.send(renderGift(recipient));
 });
