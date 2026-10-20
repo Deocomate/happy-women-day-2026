@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import { config } from './config.js';
+import { users } from './db.js';
 
-const COOKIE_NAME = 'hwd_admin';
+const COOKIE_NAME = 'hwd_session';
 const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 const failedLogins = new Map();
@@ -23,17 +24,26 @@ function readCookie(req, name) {
   return null;
 }
 
-export function isAuthenticated(req) {
+/** Returns the signed-in user, or null. Cookie format: "<userId>.<tokenVersion>.<expires>.<signature>". */
+export function currentUser(req) {
   const token = readCookie(req, COOKIE_NAME);
-  if (!token) return false;
-  const [expires, signature] = token.split('.');
-  if (!expires || !signature || !safeEqual(signature, sign(expires))) return false;
-  return Number(expires) > Date.now();
+  if (!token) return null;
+  const [userId, version, expires, signature] = token.split('.');
+  const payload = `${userId}.${version}.${expires}`;
+  if (!signature || !safeEqual(signature, sign(payload)) || Number(expires) <= Date.now()) return null;
+  const user = users.findById(Number(userId));
+  return user && user.token_version === Number(version) ? user : null;
 }
 
 export function requireAuth(req, res, next) {
-  if (isAuthenticated(req)) return next();
-  res.status(401).json({ error: 'Phiên đăng nhập đã hết hạn' });
+  req.user = currentUser(req);
+  if (req.user) return next();
+  res.status(401).json({ error: 'Phiên đăng nhập hết hạn rồi, đăng nhập lại nhé' });
+}
+
+export function requireOwner(req, res, next) {
+  if (req.user?.is_owner) return next();
+  res.status(403).json({ error: 'Chỉ chủ app mới làm được việc này' });
 }
 
 function cookieOptions(req) {
@@ -45,9 +55,10 @@ function cookieOptions(req) {
   };
 }
 
-export function startSession(req, res) {
-  const expires = String(Date.now() + config.sessionMaxAgeMs);
-  res.cookie(COOKIE_NAME, `${expires}.${sign(expires)}`, {
+export function startSession(req, res, user) {
+  const expires = Date.now() + config.sessionMaxAgeMs;
+  const payload = `${user.id}.${user.token_version}.${expires}`;
+  res.cookie(COOKIE_NAME, `${payload}.${sign(payload)}`, {
     ...cookieOptions(req),
     maxAge: config.sessionMaxAgeMs,
   });
@@ -67,15 +78,16 @@ export function isLockedOut(ip) {
   return Boolean(entry.until);
 }
 
-export function checkCredentials(ip, username, password) {
-  const ok = safeEqual(username ?? '', config.adminUsername) & safeEqual(password ?? '', config.adminPassword);
-  if (ok) {
+/** Returns the user for valid credentials; counts failures per IP for the lockout. */
+export function login(ip, username, password) {
+  const user = users.authenticate(username, password);
+  if (user) {
     failedLogins.delete(ip);
-    return true;
+    return user;
   }
   const entry = failedLogins.get(ip) || { count: 0, until: 0 };
   entry.count += 1;
   if (entry.count >= MAX_FAILED_LOGINS) entry.until = Date.now() + LOCKOUT_MS;
   failedLogins.set(ip, entry);
-  return false;
+  return null;
 }

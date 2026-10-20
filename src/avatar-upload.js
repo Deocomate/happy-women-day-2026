@@ -22,7 +22,7 @@ function detectImageExt(buf) {
 /** Saves an uploaded avatar and returns its stored file name, or throws a user-facing error. */
 export async function saveAvatar(file) {
   const ext = detectImageExt(file.buffer);
-  if (!ext) throw new Error('Ảnh phải là JPG, PNG, WEBP hoặc GIF');
+  if (!ext) throw new Error('Chỉ nhận ảnh JPG, PNG, WEBP hoặc GIF thôi nha');
   const fileName = `${crypto.randomUUID()}.${ext}`;
   await fs.writeFile(path.join(config.uploadsDir, fileName), file.buffer);
   return fileName;

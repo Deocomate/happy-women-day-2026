@@ -4,26 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Quản trị · Vườn hoa 20/10</title>
+  <title>Vườn hoa 20/10</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/admin/admin.css">
 </head>
-<body data-base="{{BASE}}">
+<body data-base="{{BASE}}" data-username="{{USERNAME}}" data-owner="{{IS_OWNER}}">
   <header class="topbar">
     <div class="brand brand-inline">
       <span class="brand-mark" aria-hidden="true">✿</span>
       <strong>Vườn hoa 20/10</strong>
     </div>
-    <form method="post" action="{{BASE}}/logout">
-      <button type="submit" class="btn btn-ghost">Đăng xuất</button>
-    </form>
+    <div class="topbar-actions">
+      <span class="whoami">Chào <strong>{{USERNAME}}</strong></span>
+      <button type="button" id="change-password" class="btn btn-ghost btn-small" hidden>Đổi mật khẩu</button>
+      <form method="post" action="{{BASE}}/logout">
+        <button type="submit" class="btn btn-ghost btn-small">Đăng xuất</button>
+      </form>
+    </div>
   </header>
 
   <main class="layout">
     <section class="panel" aria-labelledby="create-title">
-      <h2 id="create-title">Tặng hoa cho một người</h2>
+      <h2 id="create-title">Gói một bó hoa mới</h2>
       <form id="create-form" class="create-form" novalidate>
         <label class="avatar-picker" for="avatar-input">
           <input id="avatar-input" class="sr-only" type="file" accept="image/*">
@@ -31,40 +35,82 @@
             <span class="avatar-placeholder">＋</span>
           </span>
           <span class="avatar-hint">
-            <strong>Ảnh đại diện</strong>
-            <small>Chạm để chọn ảnh · tự cắt vuông</small>
+            <strong>Ảnh của người nhận</strong>
+            <small>Chọn ảnh bất kỳ, app tự cắt vuông cho</small>
           </span>
         </label>
         <button type="button" id="avatar-clear" class="btn btn-ghost btn-small" hidden>Bỏ ảnh</button>
 
         <label class="field">
           <span>Tên người nhận</span>
-          <input id="name-input" name="name" type="text" maxlength="80" placeholder="VD: Nguyễn Thị Hoa" required>
+          <input id="name-input" name="name" type="text" maxlength="80" placeholder="Ví dụ: Nguyễn Thị Hoa" required>
         </label>
-        <p class="slug-preview">Đường dẫn: <code id="slug-preview">/…</code></p>
+        <p class="slug-preview">Link sẽ là <code id="slug-preview">/…</code></p>
 
         <p id="form-error" class="error" role="alert" hidden></p>
-        <button type="submit" class="btn btn-primary btn-block" id="create-btn">Tạo đường dẫn tặng hoa 💐</button>
+        <button type="submit" class="btn btn-primary btn-block" id="create-btn">Tạo link tặng hoa 💐</button>
       </form>
 
       <div id="created" class="created" hidden>
-        <p>Đã tạo! Gửi đường dẫn này cho <strong id="created-name"></strong>:</p>
+        <p>Xong rồi nè. Gửi link này cho <strong id="created-name"></strong> là được:</p>
         <div class="link-row">
           <input id="created-link" type="text" readonly>
-          <button type="button" class="btn btn-primary btn-small" data-copy-target="created-link">Sao chép</button>
+          <button type="button" class="btn btn-primary btn-small" data-copy-target="created-link">Copy</button>
         </div>
       </div>
     </section>
 
-    <section class="panel" aria-labelledby="list-title">
-      <div class="panel-head">
-        <h2 id="list-title">Danh sách đã tặng</h2>
-        <span id="count" class="badge">0</span>
-      </div>
-      <p id="empty" class="empty" hidden>Chưa có ai. Hãy tặng bó hoa đầu tiên nhé!</p>
-      <ul id="list" class="list"></ul>
-    </section>
+    <div class="stack">
+      <section class="panel" aria-labelledby="list-title">
+        <div class="panel-head">
+          <h2 id="list-title">Những người đã nhận hoa</h2>
+          <span id="count" class="badge">0</span>
+        </div>
+        <p id="empty" class="empty" hidden>Danh sách còn trống. Bó hoa đầu tiên đang chờ bạn gói đó.</p>
+        <ul id="list" class="list"></ul>
+      </section>
+
+      <section id="accounts" class="panel" aria-labelledby="accounts-title" hidden>
+        <div class="panel-head">
+          <h2 id="accounts-title">Tài khoản</h2>
+          <span id="account-count" class="badge">0</span>
+        </div>
+        <p class="note">Mỗi người chỉ thấy danh sách của riêng mình. Bạn cũng không xem được ai đang tặng hoa cho ai.</p>
+        <form id="account-form" class="account-form" novalidate>
+          <label class="field">
+            <span>Tên đăng nhập</span>
+            <input id="account-username" type="text" maxlength="32" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ví dụ: minh.anh">
+          </label>
+          <label class="field">
+            <span>Mật khẩu ban đầu</span>
+            <input id="account-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" placeholder="Ít nhất 8 ký tự">
+          </label>
+          <p id="account-error" class="error" role="alert" hidden></p>
+          <button type="submit" class="btn btn-primary" id="account-btn">Tạo tài khoản</button>
+        </form>
+        <ul id="account-list" class="list"></ul>
+      </section>
+    </div>
   </main>
+
+  <dialog id="password-dialog" class="dialog">
+    <form id="password-form" method="dialog" novalidate>
+      <h2 id="password-title">Đổi mật khẩu</h2>
+      <label class="field" id="current-password-field">
+        <span>Mật khẩu hiện tại</span>
+        <input id="current-password" type="password" autocomplete="current-password">
+      </label>
+      <label class="field">
+        <span>Mật khẩu mới</span>
+        <input id="new-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" placeholder="Ít nhất 8 ký tự">
+      </label>
+      <p id="password-error" class="error" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" id="password-cancel">Thôi</button>
+        <button type="submit" class="btn btn-primary" id="password-submit">Lưu</button>
+      </div>
+    </form>
+  </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="/static/admin/admin.js" type="module"></script>

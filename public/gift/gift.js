@@ -12,9 +12,10 @@ const hasName = Boolean(gift.name?.trim());
 const name = hasName ? gift.name.trim() : 'bạn';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const letterWish = `Chúc ${name} một ngày 20/10 thật rực rỡ 🌸 Mong ${name} luôn xinh đẹp, bình an và hạnh phúc — `
-  + 'mỗi ngày đều dịu dàng như những đóa hoa, và luôn có thật nhiều yêu thương ở bên 💖';
-const gardenWish = `Gửi tặng ${name} cả một mùa hoa — vì ${name} xứng đáng với những điều dịu dàng nhất.`;
+const letterWish = `Hôm nay là ngày của ${name}, nên được quyền nhõng nhẽo cả ngày nha. `
+  + `Chúc ${name} luôn vui, luôn xinh và bình yên theo cách của riêng mình. `
+  + 'Chuyện mệt mỏi cứ để mai tính, hôm nay chỉ cần nhận hoa thôi 🌷';
+const gardenWish = `Bó hoa này chỉ có một, và nó là của ${name}.`;
 
 const $ = (id) => document.getElementById(id);
 const intro = $('intro');

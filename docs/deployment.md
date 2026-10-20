@@ -1,17 +1,33 @@
-# Vườn hoa 20/10 — hướng dẫn chạy & triển khai
+# Vườn hoa 20/10: hướng dẫn chạy và triển khai
 
-Ứng dụng Node.js nhỏ: quản trị viên nhập **tên** + **ảnh đại diện**, hệ thống tự sinh
-đường dẫn theo tên (VD `Nguyễn Thị Đào` → `/nguyen-thi-dao`, trùng tên thì `-2`, `-3`…)
+Ứng dụng Node.js nhỏ: người gửi nhập **tên** và **ảnh** người nhận, hệ thống tự sinh
+đường dẫn theo tên (ví dụ `Nguyễn Thị Đào` thành `/nguyen-thi-dao`, trùng tên thì thêm `-2`, `-3`)
 để gửi tặng. Người nhận mở link sẽ thấy lá thư có tên, ảnh và bó hoa SVG nở dần.
+
+## Nhiều tài khoản
+
+Tài khoản đặt bằng `ADMIN_USERNAME` và `ADMIN_PASSWORD` là **chủ app**. Chủ app tạo, đặt lại mật khẩu
+hoặc xoá tài khoản cho người khác ngay trong trang quản trị (mục **Tài khoản**).
+
+- Mỗi tài khoản chỉ thấy và xoá được danh sách người nhận của chính mình, kể cả chủ app.
+- Người dùng thường tự đổi mật khẩu được (nút **Đổi mật khẩu**). Đổi hoặc bị đặt lại mật khẩu thì
+  mọi phiên đăng nhập cũ trên thiết bị khác đều bị đăng xuất.
+- Mật khẩu chủ app chỉ đổi qua biến môi trường. Sửa `ADMIN_PASSWORD` rồi khởi động lại là áp dụng.
+- Xoá một tài khoản sẽ xoá luôn các link tặng hoa và ảnh của tài khoản đó.
+- Đường dẫn tặng hoa dùng chung một không gian tên, nên hai tài khoản cùng tặng "Lan" sẽ ra `/lan` và `/lan-2`.
+
+Lần đầu chạy bản có tài khoản trên dữ liệu cũ, app tự sao lưu DB thành `gifts.before-accounts.<thời gian>.db`
+trong `DATA_DIR`, rồi gán toàn bộ người nhận cũ cho chủ app.
 
 ## Cấu trúc
 
 | Đường dẫn | Vai trò |
 |---|---|
 | `src/server.js` | Express: trang tặng hoa, khu quản trị ẩn, API |
-| `src/config.js` | Đọc & kiểm tra biến môi trường (thiếu là dừng ngay) |
-| `src/db.js` | SQLite tích hợp sẵn của Node (`node:sqlite`) — file `data/gifts.db` |
-| `src/auth.js` | Cookie phiên ký HMAC, khoá đăng nhập 15 phút sau 5 lần sai |
+| `src/config.js` | Đọc và kiểm tra biến môi trường (thiếu là dừng ngay) |
+| `src/db.js` | SQLite tích hợp sẵn của Node (`node:sqlite`), file `data/gifts.db`. Bảng `users` và `recipients` |
+| `src/auth.js` | Cookie phiên ký HMAC theo từng tài khoản, khoá đăng nhập 15 phút sau 5 lần sai |
+| `src/password.js` | Băm mật khẩu bằng scrypt |
 | `src/avatar-upload.js` | Nhận ảnh (≤5MB), kiểm tra magic bytes JPG/PNG/WEBP/GIF |
 | `public/shared/slug.js` | Hàm tạo slug dùng chung cho server và trang quản trị |
 | `public/gift/` | Trang tặng hoa: `bouquet.js` (bó hoa SVG), `petal-sky.js` (cánh hoa rơi), `gift.js`, `gift.css` |
@@ -26,9 +42,9 @@ Xem `.env.example`.
 
 | Biến | Bắt buộc | Ghi chú |
 |---|---|---|
-| `ADMIN_PATH` | ✔ | Đoạn URL bí mật của trang quản trị, 6–64 ký tự `a-z A-Z 0-9 - _`. Quản trị ở `https://domain/<ADMIN_PATH>` |
-| `ADMIN_USERNAME` | ✔ | Tài khoản quản trị |
-| `ADMIN_PASSWORD` | ✔ | Mật khẩu quản trị — đặt dài |
+| `ADMIN_PATH` | ✔ | Đoạn URL bí mật của trang quản trị, 6 đến 64 ký tự `a-z A-Z 0-9 - _`. Quản trị ở `https://domain/<ADMIN_PATH>` |
+| `ADMIN_USERNAME` | ✔ | Tên đăng nhập của chủ app |
+| `ADMIN_PASSWORD` | ✔ | Mật khẩu chủ app, nên đặt dài |
 | `SESSION_SECRET` | ✔ trong compose | Chuỗi ngẫu nhiên ký phiên (`openssl rand -hex 32`). Thiếu khi chạy local thì phiên mất sau mỗi lần khởi động lại |
 | `PORT` | | Mặc định `3000` |
 | `DATA_DIR` | | Mặc định `./data` |
