@@ -32,7 +32,12 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => (
 ));
 // JSON embedded in <script> must not be able to close the tag.
 const safeJson = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
-const render = (name, vars = {}) => templates[name].replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? '');
+// Changes on every deploy so browsers drop the 1h-cached /static files instead of mixing old JS with new HTML.
+const assetVersion = Date.now().toString(36);
+const render = (name, vars = {}) => templates[name].replace(
+  /\{\{(\w+)\}\}/g,
+  (_, key) => ({ ASSET_VERSION: assetVersion, ...vars })[key] ?? '',
+);
 const avatarUrl = (fileName) => (fileName ? `/uploads/${fileName}` : null);
 const toDto = (r) => ({ ...r, avatar: avatarUrl(r.avatar) });
 

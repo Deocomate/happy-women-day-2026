@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/admin/admin.css">
+  <link rel="stylesheet" href="/static/admin/admin.css?v={{ASSET_VERSION}}">
 </head>
 <body data-base="{{BASE}}" data-username="{{USERNAME}}" data-owner="{{IS_OWNER}}">
   <header class="topbar">
@@ -113,6 +113,6 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/static/admin/admin.js" type="module"></script>
+  <script src="/static/admin/admin.js?v={{ASSET_VERSION}}" type="module"></script>
 </body>
 </html>
